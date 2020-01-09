@@ -68,9 +68,14 @@ public class GoodsController {
 	 * @return
 	 */
 	@RequestMapping("/update")
-	public Result update(@RequestBody TbGoods goods){
+	public Result update(@RequestBody Goods goods){
 		try {
-
+			//商品中的卖家=当前登陆的卖家=数据库中的卖家
+			String sellerId_database = goodsService.findOne(goods.getGoods().getId()).getGoods().getSellerId();
+			String sellerId_login = SecurityContextHolder.getContext().getAuthentication().getName();
+			if(!(sellerId_login.equals(goods.getGoods().getSellerId()) && sellerId_login.equals(sellerId_database))){
+				return new Result(false,"非法操作");
+			}
 			goodsService.update(goods);
 			return new Result(true, "修改成功");
 		} catch (Exception e) {

@@ -1,5 +1,5 @@
  //控制层 
-app.controller('goodsController' ,function($scope,$controller,goodsService,uploadService,itemCatService,typeTemplateService){
+app.controller('goodsController' ,function($scope,$controller,goodsService,$location,uploadService,itemCatService,typeTemplateService){
 	
 	$controller('baseController',{$scope:$scope});//继承
     $scope.entity={goods:{},goodsDesc:{itemImages:[],specificationItems:[]}}
@@ -54,7 +54,9 @@ app.controller('goodsController' ,function($scope,$controller,goodsService,uploa
     $scope.$watch("entity.goods.typeTemplateId",function (newValue, oldValue) {
 		typeTemplateService.findOne(newValue).success(function (response) {
 			$scope.brandIds=JSON.parse(response.brandIds);//注意返回的是字符串，需要自己解析为其他数据结构
-            $scope.entity.goodsDesc.customAttributeItems=JSON.parse( response.customAttributeItems);
+            if($location.search()['id']==null){
+                $scope.entity.goodsDesc.customAttributeItems=JSON.parse( response.customAttributeItems);
+            }
         })
 		typeTemplateService.findSpecList(newValue).success(function (response) {
 			$scope.specList=response;
@@ -111,13 +113,50 @@ app.controller('goodsController' ,function($scope,$controller,goodsService,uploa
 	}
 	
 	//查询实体 
-	$scope.findOne=function(id){				
+	$scope.findOne=function(){
+        var id= $location.search()['id'];//获取参数值
+        if(id==null){
+            return ;
+        }
 		goodsService.findOne(id).success(
 			function(response){
-				$scope.entity= response;					
-			}
+				$scope.entity= response;
+				editor.html($scope.entity.goodsDesc.introduction);
+                //显示图片列表
+                $scope.entity.goodsDesc.itemImages=
+                    JSON.parse($scope.entity.goodsDesc.itemImages);
+                //显示扩展属性
+                $scope.entity.goodsDesc.customAttributeItems=
+					JSON.parse($scope.entity.goodsDesc.customAttributeItems);
+
+                //规格
+				$scope.entity.goodsDesc.specificationItems=
+					JSON.parse($scope.entity.goodsDesc.specificationItems);
+
+                for( var i=0;i<$scope.entity.itemList.length;i++ ){
+                    $scope.entity.itemList[i].spec =
+                        JSON.parse( $scope.entity.itemList[i].spec);
+                }
+            }
 		);				
 	}
+
+	$scope.checkSelected=function (name,value) {
+			var item=$scope.entity.goodsDesc.specificationItems;
+			var spec= $scope.findMap(item,"attributeName",name);
+			if(spec==null){
+				return false;
+			}
+			if(spec.attributeValue.indexOf(value)>=0){
+				return true;
+			}
+			// for(var i=0;i<spec.attributeValue.length;i++){
+			// 	if(spec.attributeValue[i]==value){
+			// 		return true;
+			// 	}
+			// }
+			return false;
+    }
 
 
     //添加图片列表
@@ -142,6 +181,7 @@ app.controller('goodsController' ,function($scope,$controller,goodsService,uploa
 				if(response.success){
                     $scope.entity={};
                     editor.html('');//清空富文本编辑器
+                    location.href="goods.html";//跳转到商品列表页
 				}else{
 					alert(response.msg);
 				}
@@ -173,5 +213,14 @@ app.controller('goodsController' ,function($scope,$controller,goodsService,uploa
 			}
 		);
 	}
+	$scope.itemCatList=[];
+	$scope.status=["未审核","已审核","审核未通过","关闭"];
+	$scope.findItemCatList=function () {
+		itemCatService.findAll().success(function (response) {
+			for(var i=0;i<response.length;i++){
+				$scope.itemCatList[response[i].id]=response[i].name;
+			}
+        })
+    }
 
 });	

@@ -12,7 +12,6 @@ import entity.PageResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import pojoGroup.Goods;
 
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -131,8 +130,39 @@ public class GoodsServiceImpl implements GoodsService {
 	 * 修改
 	 */
 	@Override
-	public void update(TbGoods goods){
-		goodsMapper.updateByPrimaryKeySelective(goods);
+	public void update(Goods goods){
+		goods.getGoods().setAuditStatus("0");
+		goodsMapper.updateByPrimaryKeySelective(goods.getGoods());
+		goodsDescMapper.updateByPrimaryKeySelective(goods.getGoodsDesc());
+
+		TbItem where=new TbItem();
+		where.setGoodsId(goods.getGoods().getId());
+		itemMapper.delete(where);
+
+		if(goods.getGoods().getIsEnableSpec().equals("1")){
+			for(TbItem item :goods.getItemList()){
+				//标题
+				String title= goods.getGoods().getGoodsName();
+				Map<String,Object> specMap = JSON.parseObject(item.getSpec());
+				for(String key:specMap.keySet()){
+					title+=" "+ specMap.get(key);
+				}
+				item.setTitle(title);
+				setItemValus(goods,item);
+				itemMapper.insert(item);
+			}
+		}
+		else{
+			TbItem item=new TbItem();
+			item.setTitle(goods.getGoods().getGoodsName());//商品KPU+规格描述串作为SKU名称
+			item.setPrice( goods.getGoods().getPrice() );//价格
+			item.setStatus("1");//状态
+			item.setIsDefault("1");//是否默认
+			item.setNum(99999);//库存数量
+			item.setSpec("{}");
+			setItemValus(goods,item);
+			itemMapper.insert(item);
+		}
 	}	
 	
 	/**
@@ -156,25 +186,12 @@ public class GoodsServiceImpl implements GoodsService {
 	 */
 	@Override
 	public void delete(Long[] ids) {
-		//数组转list
-        List longs = Arrays.asList(ids);
-        //构建查询条件
-        Example example = new Example(TbGoods.class);
-        Example.Criteria criteria = example.createCriteria();
-        criteria.andIn("id", longs);
-
-        //跟据查询条件删除数据
-        goodsMapper.deleteByExample(example);
-
-        Example example1=new Example(TbGoodsDesc.class);
-		Example.Criteria criteria1 = example1.createCriteria();
-		criteria1.andIn("goodsId",longs);
-		goodsDescMapper.deleteByExample(example1);
-
-		Example example2=new Example(TbItem.class);
-		Example.Criteria criteria2 = example2.createCriteria();
-		criteria2.andIn("goodsId",longs);
-		itemMapper.deleteByExample(example2);
+	//逻辑删除
+		for (Long id : ids) {
+			TbGoods goods=new TbGoods();
+			goods.setIsDelete("1");
+			goodsMapper.updateByPrimaryKeySelective(goods);
+		}
 	}
 	
 	
