@@ -1,4 +1,4 @@
-package com.pinyougou.shop.controller;
+package com.pinyougou.sellergoods.controller;
 
 import com.pinyougou.utils.FastDFSClient;
 import entity.Result;

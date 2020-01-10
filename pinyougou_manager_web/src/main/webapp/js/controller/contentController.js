@@ -1,5 +1,5 @@
  //控制层 
-app.controller('contentController' ,function($scope,$controller,contentService){	
+app.controller('contentController' ,function($scope,$controller,contentService,uploadService,contentCategoryService){
 	
 	$controller('baseController',{$scope:$scope});//继承
 	
@@ -75,5 +75,23 @@ app.controller('contentController' ,function($scope,$controller,contentService){
 			}			
 		);
 	}
-    
+    //上传图片
+    $scope.uploadFile=function () {
+        uploadService.uploadFile().success(function (response) {
+            //如果上传成功,绑定url到表单
+            if(response.success){
+                $scope.entity.pic=response.msg;
+            }else{
+                alert(response.message);
+            }
+        }).error(function() {
+            alert("上传发生错误");
+        });
+    }
+    $scope.findAllContentCatgoery=function () {
+		contentCategoryService.findAll().success(function (response) {
+			$scope.contentCatList=response;
+        })
+    }
+    $scope.status=["无效","有效"];
 });	

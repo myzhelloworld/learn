@@ -1,16 +1,17 @@
-package com.pinyougou.sellergoods.service.impl;
-import java.util.Arrays;
-import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
+package com.pinyougou.content.service.impl;
+
 import com.alibaba.dubbo.config.annotation.Service;
 import com.github.abel533.entity.Example;
-import com.github.pagehelper.PageInfo;
-import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+import com.pinyougou.content.service.ContentService;
 import com.pinyougou.mapper.TbContentMapper;
 import com.pinyougou.pojo.TbContent;
-import com.pinyougou.sellergoods.service.ContentService;
 import entity.PageResult;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * 业务逻辑实现
