@@ -9,9 +9,12 @@ import com.pinyougou.mapper.TbContentMapper;
 import com.pinyougou.pojo.TbContent;
 import entity.PageResult;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 业务逻辑实现
@@ -23,6 +26,8 @@ public class ContentServiceImpl implements ContentService {
 
 	@Autowired
 	private TbContentMapper contentMapper;
+	@Autowired
+	private RedisTemplate redisTemplate;
 	
 	/**
 	 * 查询全部
@@ -58,7 +63,8 @@ public class ContentServiceImpl implements ContentService {
 	 */
 	@Override
 	public void add(TbContent content) {
-		contentMapper.insertSelective(content);		
+		contentMapper.insertSelective(content);
+		redisTemplate.boundHashOps("content").delete(content.getCategoryId());
 	}
 
 	
@@ -67,6 +73,11 @@ public class ContentServiceImpl implements ContentService {
 	 */
 	@Override
 	public void update(TbContent content){
+		Long categoryId = contentMapper.selectByPrimaryKey(content.getId()).getCategoryId();
+		redisTemplate.boundHashOps("content").delete(content.getCategoryId());
+		if(categoryId.longValue()!=content.getCategoryId().longValue()){
+			redisTemplate.boundHashOps("content").delete(categoryId);
+		}
 		contentMapper.updateByPrimaryKeySelective(content);
 	}	
 	
@@ -91,8 +102,15 @@ public class ContentServiceImpl implements ContentService {
         Example example = new Example(TbContent.class);
         Example.Criteria criteria = example.createCriteria();
         criteria.andIn("id", longs);
-
-        //跟据查询条件删除数据
+		List <TbContent> tbContents = contentMapper.selectByExample(example);
+		Set<Long> categories=new HashSet();
+		for (TbContent content : tbContents) {
+			categories.add(content.getCategoryId());
+		}
+		for (Long category : categories) {
+			redisTemplate.boundHashOps("content").delete(category);
+		}
+		//跟据查询条件删除数据
         contentMapper.deleteByExample(example);
 	}
 	
@@ -138,5 +156,23 @@ public class ContentServiceImpl implements ContentService {
 		
 		return result;
 	}
-	
+
+	@Override
+	public List <TbContent> findByCategoryId( Long categoryId ) {
+		List <TbContent> tbContents = (List <TbContent>) redisTemplate.boundHashOps("content").get((categoryId));
+		if(tbContents==null) {
+			Example example = new Example(TbContent.class);
+			Example.Criteria criteria = example.createCriteria();
+			criteria.andEqualTo("categoryId", categoryId);
+			criteria.andEqualTo("status", "1");
+			example.setOrderByClause("sortOrder asc");
+			tbContents= contentMapper.selectByExample(example);
+			redisTemplate.boundHashOps("content").put(categoryId,tbContents);
+		}
+		else {
+			System.out.println("从缓存中获得数据");
+		}
+		return tbContents;
+	}
+
 }

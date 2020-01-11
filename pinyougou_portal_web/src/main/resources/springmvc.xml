@@ -7,6 +7,7 @@
         http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
         http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd
         http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+   <context:annotation-config></context:annotation-config>
     <mvc:annotation-driven>
         <mvc:message-converters register-defaults="true">
             <!--使用阿里巴巴的json解析产品，FastJson效率上会比之前学过的Jackson高一些 -->
@@ -24,7 +25,7 @@
     <!--加载配置文件-->
 
     <!-- 引用dubbo 服务 -->
-    <dubbo:application name="pinyougou-shop-web" />
+    <dubbo:application name="pinyougou-portal-web" />
     <dubbo:registry address="zookeeper://192.168.218.128:2181"/>
-    <dubbo:annotation package="com.pinyougou.shop.controller" />
+    <dubbo:annotation package="com.pinyougou.portal.controller" />
 </beans>
