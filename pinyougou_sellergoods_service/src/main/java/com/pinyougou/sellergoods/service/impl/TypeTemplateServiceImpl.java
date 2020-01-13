@@ -12,6 +12,7 @@ import com.pinyougou.pojo.TbTypeTemplate;
 import com.pinyougou.sellergoods.service.TypeTemplateService;
 import entity.PageResult;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import pojoGroup.Specification;
 
 import java.util.ArrayList;
@@ -56,9 +57,27 @@ public class TypeTemplateServiceImpl implements TypeTemplateService {
         //获取总记录数
         PageInfo<TbTypeTemplate> info = new PageInfo<TbTypeTemplate>(list);
         result.setTotal(info.getTotal());
+        saveToRedis();
 		return result;
 	}
+	@Autowired
+	private RedisTemplate redisTemplate;
 
+	/**
+	 * 将数据放入缓存
+	 */
+	private void saveToRedis(){
+		//分别将品牌数据和规格数据放入缓存（Hash）。以模板ID作为key,以品牌列表和规格列表作为值。
+		List<TbTypeTemplate> templates = findAll();
+		for (TbTypeTemplate template : templates) {
+			//缓存品牌列表
+			List<Map> brandList = JSON.parseArray(template.getBrandIds(), Map.class);
+			redisTemplate.boundHashOps("brandList").put(template.getId(), brandList);
+			//缓存规格列表
+			List<Map> specList = findSpecListByTypeId(template.getId());
+			redisTemplate.boundHashOps("specList").put(template.getId(), specList);
+		}
+	}
 	/**
 	 * 增加
 	 */
@@ -141,6 +160,7 @@ public class TypeTemplateServiceImpl implements TypeTemplateService {
         //获取总记录数
         PageInfo<TbTypeTemplate> info = new PageInfo<TbTypeTemplate>(list);
         result.setTotal(info.getTotal());
+		saveToRedis();
 		return result;
 	}
 
